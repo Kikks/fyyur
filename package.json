@@ -1,0 +1,11 @@
+{
+  "name": "fyyur",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/udacity/cd0046-SQL-and-Data-Modeling-for-the-Web.git",
+  "author": "Olufemi Okikioluwa <101170232+samlufi@users.noreply.github.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "3"
+  }
+}
