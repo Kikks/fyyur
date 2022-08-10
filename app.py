@@ -96,18 +96,15 @@ def venues():
 
         for venue in venues:
             if (venue.state == location[0]) and (venue.city == location[1]):
-                shows = Show.query.filter_by(venue_id=venue.id).all()
-                num_upcoming_shows = 0
-
-                for show in shows:
-                    if show.start_time > current_date:
-                        num_upcoming_shows += 1
+                shows = Show.query.filter(
+                    Show.venue_id == venue.id, Show.start_time > current_date
+                ).all()
 
                 venue_list.append(
                     {
                         "id": venue.id,
                         "name": venue.name,
-                        "num_upcoming_shows": num_upcoming_shows,
+                        "num_upcoming_shows": len(shows),
                     }
                 )
 
@@ -161,8 +158,12 @@ def show_venue(venue_id):
         for genre in venue.genres:
             genres.append(genre.name)
 
-        upcoming_shows_list = Show.query.filter(Show.start_time > now).all()
-        past_shows_list = Show.query.filter(Show.start_time < now).all()
+        upcoming_shows_list = Show.query.filter(
+            Show.venue_id == venue_id, Show.start_time > now
+        ).all()
+        past_shows_list = Show.query.filter(
+            Show.venue_id == venue_id, Show.start_time < now
+        ).all()
 
         for show in upcoming_shows_list:
             upcoming_shows.append(
@@ -306,11 +307,8 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route("/artists")
 def artists():
-    data = []
     artists = Artist.query.all()
-
-    for artist in artists:
-        data.append({"id": artist.id, "name": artist.name})
+    data = [{"id": artist.id, "name": artist.name} for artist in artists]
 
     return render_template("pages/artists.html", artists=data)
 
@@ -360,8 +358,12 @@ def show_artist(artist_id):
         for genre in artist.genres:
             genres.append(genre.name)
 
-        upcoming_shows_list = Show.query.filter(Show.start_time > now).all()
-        past_shows_list = Show.query.filter(Show.start_time < now).all()
+        upcoming_shows_list = Show.query.filter(
+            Show.artist_id == artist.id, Show.start_time > now
+        ).all()
+        past_shows_list = Show.query.filter(
+            Show.artist_id == artist.id, Show.start_time < now
+        ).all()
 
         for show in upcoming_shows_list:
             upcoming_shows.append(
