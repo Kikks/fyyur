@@ -49,7 +49,10 @@ from models import *
 
 
 def format_datetime(value, format="medium"):
-    date = dateutil.parser.parse(value)
+    if isinstance(value, str):
+        date = dateutil.parser.parse(value)
+    else:
+        date = value
     if format == "full":
         format = "EEEE MMMM, d, y 'at' h:mma"
     elif format == "medium":
@@ -97,7 +100,7 @@ def venues():
                 num_upcoming_shows = 0
 
                 for show in shows:
-                    if show.start_time > now:
+                    if show.start_time > current_date:
                         num_upcoming_shows += 1
 
                 venue_list.append(
@@ -118,20 +121,18 @@ def search_venues():
     data = []
     search_term = request.form.get("search_term", "")
     venues = Venue.query.filter(Venue.name.ilike(f"%{search_term.lower()}%")).all()
+    current_date = datetime.now()
 
     for venue in venues:
-        shows = Show.query.filter_by(venue_id=venue.id).all()
-        num_upcoming_shows = 0
-
-        for show in shows:
-            if show.start_time > now:
-                num_upcoming_shows += 1
+        shows = Show.query.filter(
+            Show.venue_id == venue.id, Show.start_time > current_date
+        ).all()
 
         data.append(
             {
                 "id": venue.id,
                 "name": venue.name,
-                "num_upcoming_shows": num_upcoming_shows,
+                "num_upcoming_shows": len(shows),
             }
         )
 
@@ -160,25 +161,30 @@ def show_venue(venue_id):
         for genre in venue.genres:
             genres.append(genre.name)
 
-        for show in venue.shows:
-            if show.start_time > now:
-                upcoming_shows(
-                    {
-                        "artist_id": show.artist_id,
-                        "artist_name": show.artist.name,
-                        "artist_image_link": show.artist.image_link,
-                        "start_time": format_datetime(show.start_time),
-                    }
-                )
-            else:
-                past_shows(
-                    {
-                        "artist_id": show.artist_id,
-                        "artist_name": show.artist.name,
-                        "artist_image_link": show.artist.image_link,
-                        "start_time": format_datetime(show.start_time),
-                    }
-                )
+        upcoming_shows_list = Show.query.filter(Show.start_time > now).all()
+        past_shows_list = Show.query.filter(Show.start_time < now).all()
+
+        for show in upcoming_shows_list:
+            upcoming_shows.append(
+                {
+                    "artist_id": show.artist.id,
+                    "artist_name": show.artist.name,
+                    "artist_image_link": show.artist.image_link,
+                    "start_time": format_datetime(
+                        show.start_time,
+                    ),
+                }
+            )
+
+        for show in past_shows_list:
+            past_shows.append(
+                {
+                    "artist_id": show.artist.id,
+                    "artist_name": show.artist.name,
+                    "artist_image_link": show.artist.image_link,
+                    "start_time": format_datetime(show.start_time),
+                }
+            )
 
         data = {
             "id": venue.id,
@@ -314,20 +320,18 @@ def search_artists():
     data = []
     search_term = request.form.get("search_term", "")
     artists = Artist.query.filter(Artist.name.ilike(f"%{search_term.lower()}%")).all()
+    current_date = datetime.now()
 
     for artist in artists:
-        shows = Show.query.filter_by(artist_id=artist.id).all()
-        num_upcoming_shows = 0
-
-        for show in shows:
-            if show.start_time > now:
-                num_upcoming_shows += 1
+        shows = Show.query.filter(
+            Show.artist_id == artist.id, Show.start_time > current_date
+        ).all()
 
         data.append(
             {
                 "id": artist.id,
                 "name": artist.name,
-                "num_upcoming_shows": num_upcoming_shows,
+                "num_upcoming_shows": len(shows),
             }
         )
 
@@ -356,25 +360,28 @@ def show_artist(artist_id):
         for genre in artist.genres:
             genres.append(genre.name)
 
-        for show in artist.shows:
-            if show.start_time > now:
-                upcoming_shows(
-                    {
-                        "venue_id": show.venue_id,
-                        "venue_name": show.venue.name,
-                        "venue_image_link": show.venue.image_link,
-                        "start_time": format_datetime(show.start_time),
-                    }
-                )
-            else:
-                past_shows(
-                    {
-                        "venue_id": show.venue_id,
-                        "venue_name": show.venue.name,
-                        "venue_image_link": show.venue.image_link,
-                        "start_time": format_datetime(show.start_time),
-                    }
-                )
+        upcoming_shows_list = Show.query.filter(Show.start_time > now).all()
+        past_shows_list = Show.query.filter(Show.start_time < now).all()
+
+        for show in upcoming_shows_list:
+            upcoming_shows.append(
+                {
+                    "venue_id": show.venue.id,
+                    "venue_name": show.venue.name,
+                    "venue_image_link": show.venue.image_link,
+                    "start_time": format_datetime(show.start_time),
+                }
+            )
+
+        for show in past_shows_list:
+            past_shows.append(
+                {
+                    "venue_id": show.venue.id,
+                    "venue_name": show.venue.name,
+                    "venue_image_link": show.venue.image_link,
+                    "start_time": format_datetime(show.start_time),
+                }
+            )
 
         data = {
             "id": artist.id,
@@ -609,20 +616,18 @@ def create_artist_submission():
 
 @app.route("/shows")
 def shows():
-    data = []
     shows = Show.query.all()
-
-    for show in shows:
-        data.append(
-            {
-                "venue_id": show.venue_id,
-                "venue_name": show.venue.name,
-                "artist_id": show.artist_id,
-                "artist_name": show.artist.name,
-                "artist_image_link": show.artist.image_link,
-                "start_time": format_datetime(str(show.start_time)),
-            }
-        )
+    data = [
+        {
+            "venue_id": show.venue_id,
+            "venue_name": show.venue.name,
+            "artist_id": show.artist_id,
+            "artist_name": show.artist.name,
+            "artist_image_link": show.artist.image_link,
+            "start_time": format_datetime(str(show.start_time)),
+        }
+        for show in shows
+    ]
 
     return render_template("pages/shows.html", shows=data)
 
@@ -638,23 +643,23 @@ def create_shows():
 def create_show_submission():
     form = ShowForm(request.form)
 
-    venue = Venue.query.get(form.venue_id.data or 0)
-    if not venue:
-        flash(f"No venue with that ID exists!")
-        return redirect(url_for("create_show_submission"))
-
-    artist = Artist.query.get(form.artist_id.data or 0)
-    if not artist:
-        flash(f"No artist with that ID exists!")
-        return redirect(url_for("create_show_submission"))
-
     if form.validate():
         error = False
 
         try:
+            venue = Venue.query.get(form.venue_id.data or 0)
+            if not venue:
+                flash(f"No venue with that ID exists!")
+                return redirect(url_for("create_show_submission"))
+
+            artist = Artist.query.get(form.artist_id.data or 0)
+            if not artist:
+                flash(f"No artist with that ID exists!")
+                return redirect(url_for("create_show_submission"))
+
             show = Show(
-                venue_id=form.venue_id.data,
-                artist_id=form.artist_id.data,
+                venue=venue,
+                artist=artist,
                 start_time=form.start_time.data,
             )
 

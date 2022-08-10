@@ -32,6 +32,15 @@ class Show(db.Model):
     artist_id = db.Column(db.Integer, db.ForeignKey("Artist.id"), nullable=False)
     venue_id = db.Column(db.Integer, db.ForeignKey("Venue.id"), nullable=False)
 
+    artist = db.relationship(
+        "Artist",
+        foreign_keys=[artist_id],
+    )
+    venue = db.relationship(
+        "Venue",
+        foreign_keys=[venue_id],
+    )
+
     def __repr__(self):
         return f"<Show id: {self.id} artist_id: {self.artist_id} venue_id: {self.venue_id}>"
 
@@ -54,7 +63,7 @@ class Venue(db.Model):
     genres = db.relationship(
         "Genre", secondary=genre_venue_table, backref=db.backref("venues")
     )
-    shows = db.relationship("Show", backref="venue", lazy=True)
+    venue_shows = db.relationship("Show", backref=db.backref("venue_shows"), lazy=True)
 
     def __repr__(self):
         return f"<Venue id: {self.id} name: {self.name}>"
@@ -77,7 +86,9 @@ class Artist(db.Model):
     genres = db.relationship(
         "Genre", secondary=genre_artist_table, backref=db.backref("artist")
     )
-    shows = db.relationship("Show", backref="artist", lazy=True)
+    artist_shows = db.relationship(
+        "Show", backref=db.backref("artist_artist"), lazy=True
+    )
 
     def __repr__(self):
         return f"<Artist id: {self.id} name: {self.name}>"
